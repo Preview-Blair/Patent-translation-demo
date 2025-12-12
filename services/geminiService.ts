@@ -56,11 +56,16 @@ export const translateDocument = async (
     You are an expert Senior Patent Translator. 
     Task: Translate the attached patent document into ${targetLanguage}.
     
-    Guidelines:
-    1. Maintain strict technical accuracy and legal tone.
-    2. Split the translation into logical segments (e.g., paragraphs or claims).
-    3. ${glossaryContext}
-    4. CRITICAL: Identify any "uncertain phrases". These are terms that are ambiguous, potential neologisms, extremely complex, or where the translation might be shaky. Flag them.
+    GUIDELINES:
+    1. **Format**: Maintain strict technical accuracy and legal tone.
+    2. **Segmentation**: Split the translation into logical segments. 
+       - Treat paragraph identifiers (e.g., "[0001]", "[0023]") as natural segment breaks. 
+       - Each segment should ideally be one paragraph or a distinct claim.
+    3. **Numbering Handling**: 
+       - **Preserve** paragraph identifiers (e.g., [0001]).
+       - **Ignore/Remove** margin line numbers (e.g., 5, 10, 15) if they appear mid-sentence or disrupt the text flow. Do not let line numbers break a sentence into multiple segments.
+    4. **Glossary**: ${glossaryContext}
+    5. **Uncertainty Analysis**: CRITICAL: Identify any "uncertain phrases". These are terms that are ambiguous, potential neologisms, extremely complex, or where the translation might be shaky. Flag them.
     
     Output Format: Return a JSON array of segments.
   `;

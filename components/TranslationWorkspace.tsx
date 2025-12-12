@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { TranslationSegment, GlossaryTerm } from '../types';
-import { AlertCircle, Check, CheckCircle2, ChevronRight, Download, Edit2, Sparkles } from 'lucide-react';
+import { AlertCircle, Check, CheckCircle2, ChevronRight, Download, Edit2, Sparkles, ArrowUpDown, List } from 'lucide-react';
 
 interface TranslationWorkspaceProps {
   documentName: string;
@@ -18,10 +18,23 @@ const TranslationWorkspace: React.FC<TranslationWorkspaceProps> = ({
   const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
+  const [isReviewMode, setIsReviewMode] = useState(false);
   
   // Stats
   const uncertainCount = segments.filter(s => s.uncertaintyScore > 0.3 || s.flaggedTerms.length > 0).length;
   const progress = segments.length > 0 ? Math.round(((segments.length - uncertainCount) / segments.length) * 100) : 0;
+
+  // Sorting Logic
+  const displaySegments = useMemo(() => {
+    if (!isReviewMode) return segments;
+    
+    return [...segments].sort((a, b) => {
+        // Calculate a risk score based on uncertainty and flagged terms
+        const scoreA = a.uncertaintyScore + (a.flaggedTerms.length * 0.5);
+        const scoreB = b.uncertaintyScore + (b.flaggedTerms.length * 0.5);
+        return scoreB - scoreA; // Descending order
+    });
+  }, [segments, isReviewMode]);
 
   const handleEditClick = (segment: TranslationSegment) => {
     setEditingId(segment.id);
@@ -35,6 +48,7 @@ const TranslationWorkspace: React.FC<TranslationWorkspaceProps> = ({
   };
 
   const handleExport = () => {
+    // Always export in original order, not sorted order
     const text = segments.map(s => s.translatedText).join('\n\n');
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -66,8 +80,27 @@ const TranslationWorkspace: React.FC<TranslationWorkspaceProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-            <div className="flex flex-col items-end mr-4">
+        <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg border border-slate-200">
+                <button
+                    onClick={() => setIsReviewMode(false)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-2 ${!isReviewMode ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    <List className="w-3.5 h-3.5" />
+                    Original Order
+                </button>
+                <button
+                    onClick={() => setIsReviewMode(true)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-2 ${isReviewMode ? 'bg-white text-amber-700 shadow-sm ring-1 ring-amber-100' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    Prioritize Review
+                </button>
+            </div>
+
+            <div className="h-6 w-px bg-slate-200"></div>
+
+            <div className="flex flex-col items-end">
                 <span className="text-xs font-medium text-slate-500 mb-1">Confidence Score</span>
                 <div className="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div 
@@ -76,6 +109,7 @@ const TranslationWorkspace: React.FC<TranslationWorkspaceProps> = ({
                     />
                 </div>
             </div>
+            
             <button 
                 onClick={handleExport}
                 className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
@@ -89,7 +123,7 @@ const TranslationWorkspace: React.FC<TranslationWorkspaceProps> = ({
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-8">
         <div className="max-w-6xl mx-auto space-y-6">
-          {segments.map((segment) => {
+          {displaySegments.map((segment) => {
             const hasIssues = segment.uncertaintyScore > 0.4 || segment.flaggedTerms.length > 0;
             const isActive = activeSegmentId === segment.id;
             const isEditing = editingId === segment.id;
@@ -105,7 +139,7 @@ const TranslationWorkspace: React.FC<TranslationWorkspaceProps> = ({
                 `}
               >
                 {/* Source Text */}
-                <div className="font-serif text-slate-600 leading-relaxed text-lg border-r border-slate-100 pr-6">
+                <div className="font-serif text-slate-600 leading-relaxed text-lg border-r border-slate-100 pr-6 whitespace-pre-wrap">
                   {segment.sourceText}
                 </div>
 
@@ -144,7 +178,7 @@ const TranslationWorkspace: React.FC<TranslationWorkspaceProps> = ({
                     </div>
                   ) : (
                     <div className="group/target relative h-full">
-                         <div className="text-slate-800 text-lg leading-relaxed font-sans">
+                         <div className="text-slate-800 text-lg leading-relaxed font-sans whitespace-pre-wrap">
                             {segment.translatedText}
                         </div>
                         
