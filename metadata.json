@@ -1,0 +1,5 @@
+{
+  "name": "PatentFlow AI Translator",
+  "description": "Enterprise-grade patent translation tool with simulated RAG and human-in-the-loop review for uncertain terminology.",
+  "requestFramePermissions": []
+}
